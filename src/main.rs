@@ -1,9 +1,9 @@
 use std::io::{Error, Read};
 use std::os::unix::io::AsRawFd;
-use std::{env, fmt, fs};
+use std::{env, fmt, fs, thread};
 
 use anyhow::{anyhow, bail, Context, Result};
-use log::debug;
+use log::{debug, trace};
 use rumqttc::{MqttOptions, QoS};
 use time::OffsetDateTime;
 
@@ -95,7 +95,13 @@ fn main() -> Result<()> {
     let mut f = fs::OpenOptions::new().read(true).write(true).open(device)?;
 
     let mqtt_opts = MqttOptions::parse_url(env_var("MQTT_URL")?)?;
-    let (mut mqtt, _connection) = rumqttc::Client::new(mqtt_opts, 60);
+    let (mut mqtt, mut connection) = rumqttc::Client::new(mqtt_opts, 60);
+
+    thread::spawn(move || {
+        for ev in connection.iter() {
+            trace!("mqtt: {ev:?}");
+        }
+    });
 
     let request = [0u8; 9];
     let answer = unsafe { ::libc::ioctl(f.as_raw_fd(), 0xC0094806, &request) };
