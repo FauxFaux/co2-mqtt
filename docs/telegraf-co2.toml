@@ -1,0 +1,18 @@
+[[inputs.mqtt_consumer]]
+  servers = ["tcp://127.0.0.1:1883"]
+  topics = ["co2/#"]
+  name_override = "co2"
+
+  topic_tag = ""
+
+  data_format = "json"
+  json_time_format = "2006-01-02T15:04:05Z"
+  json_time_key = "publishTime"
+
+  [[inputs.mqtt_consumer.topic_parsing]]
+    topic = "co2/+/SENSOR/+"
+    tags = "_/device_id/_/kind"
+
+  [[processors.pivot]]
+    tag_key = "kind"
+    value_key = "value"
